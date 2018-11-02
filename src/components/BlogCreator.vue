@@ -208,7 +208,7 @@
         justify-content: space-between;
         z-index: 1;
         height: 40px;
-        min-width: 290px;
+        /* min-width: 260px; */
 
         transition: opacity 0.1s ease-out, transform 0.1s ease-out;
     }
@@ -220,32 +220,13 @@
 
     .inline-editor:not(.focused) .ql-snow.ql-toolbar {
         opacity: 0;
+        pointer-events: none;
         transition: none;
     }
 
     .inline-editor .ql-snow.ql-toolbar .ql-formats {
         margin: 0 !important;
         margin-right: 15px !important;
-    }
-
-    .inline-editor .ql-snow .ql-editor h2,
-    .inline-editor .ql-snow .ql-editor h3 {
-        font-family: "Bariol Bold", sans-serif;
-        color: #444;
-        font-size: 1.7em !important;
-        margin-top: 0.3em !important;
-        margin-bottom: 0.1em !important;
-        max-width: 80%;
-    }
-
-    .inline-editor .ql-snow .ql-editor h3 {
-        font-size: 1.5em !important;
-    }
-    
-    .inline-editor .ql-snow .ql-editor p {
-        font-family: Lustria, serif !important;
-        font-size: 1.1em !important;
-        color: #000 !important;
     }
 
     .inline-editor .ql-snow.ql-toolbar .ql-formats:last-child {
@@ -260,16 +241,6 @@
     .inline-editor .ql-snow.ql-toolbar button svg {
         width: 18px !important;
         height: 18px !important;
-    }
-
-    .inline-editor .ql-editor.ql-blank:before {
-        font-style: normal !important;
-        top: 4px;
-        left: 0 !important;
-        right: auto !important;
-        font-family: Lustria, serif !important;
-        font-size: 1.1em;
-        color: #ccc;
     }
 
     .element svg{
@@ -311,7 +282,7 @@
                             <svg fill="#f18f16" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
                         </button>
                         <button class="component-editor-button"
-                            @click="cover = null">
+                            @click="removeCoverImage()">
                             <svg fill="#e04b2a" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
                         </button>
                     </div>
@@ -412,7 +383,7 @@
         }
     });
 
-    import { choices } from '../data'
+    import { choices } from '../choices'
 
     import { db_blog } from '../blog'
 
@@ -460,9 +431,10 @@
                 customToolbar: [
                     { 'header': '1' },
                     { 'header': '2' },
-                    'bold', 'italic', 'underline',
-                    { 'list': 'ordered'}, 
-                    { 'list': 'bullet' },
+                    'bold', 'italic', 
+                    // 'underline',
+                    // { 'list': 'ordered'}, 
+                    // { 'list': 'bullet' },
                     'link'
                 ],
                 coverImageElement: {
@@ -543,6 +515,11 @@
             
             addCoverImage(){
                 this.addElement(_.cloneDeep(this.coverImageElement));
+            },
+            
+            removeCoverImage(){
+                this.cover = null;
+                this.publish();
             },
 
             getSelectionHtml: function(selectedContent) {
@@ -792,6 +769,8 @@
             },
 
             publish: function(with_date){
+                this.saving_result = {};
+
                 this.setHtml();
                 let elements = _.cloneDeep(this.elements);
                 let cover = _.cloneDeep(this.cover);

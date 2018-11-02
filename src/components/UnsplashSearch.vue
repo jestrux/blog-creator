@@ -4,6 +4,26 @@
     padding: 0.3em 0.5em;
     position: relative;
   }
+
+  #wrapper:after{
+      position: absolute;
+      top: 40px;
+      content: 'Press enter to search';
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      color: #aaa;
+      display: block;
+      margin-top: 0.2em;
+      font-size: 0.8em;
+  }
+
+  #wrapper:not(.typing):after{
+    opacity: 0;
+  }
+  
+  #wrapper.typing{
+    margin-bottom: 1.7em;
+  }
+  
   input{
     background: transparent;
     -webkit-appearance: none;
@@ -68,10 +88,10 @@
 </style>
 
 <template>
-  <div id="wrapper">
+  <div id="wrapper" :class="{'typing': !fetched && typing}">
     <input type="text" v-model="query" 
       placeholder="Enter keywords and press enter"
-      @keydown="typing = true"
+      @keyup="startedTyping($event.target.value)"
       @keyup.enter="searchUnsplash($event.target.value)"/>
     
     <div id="movers" v-if="fetched && results.length > perPage">
@@ -82,7 +102,7 @@
         @click="page = page+1">Next</button>
     </div>
 
-    <div v-if="fetched && results.length" id="results">
+    <div v-if="!typing && fetched && results.length" id="results">
       <img v-for="(image, index) in results" 
         v-if="index >= (page - 1) * perPage && index < page * perPage"
         :style="{ background: image.color }"
@@ -135,6 +155,11 @@
       
     },
     methods: {
+      startedTyping(val){
+        this.typing = val;
+        this.fetched = false;
+        this.results = [];
+      },
       searchUnsplash(q){
         this.fetching = true;
         this.fetched = false;

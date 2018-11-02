@@ -124,6 +124,7 @@
 </template>
 
 <script>
+import _ from 'lodash'
 import BCEditorField from './BCEditorField';
 
 export default {

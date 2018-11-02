@@ -66,11 +66,27 @@
     #imageWrapper img{
         display: inline-block;
         max-width: 100%;
+        min-height: 200px;
         max-height: 450px;
+        object-fit: cover;
     }
 
     #linkInputWrapper{
         position: relative;
+    }
+    
+    #linkInputWrapper:after{
+        position: absolute;
+        content: 'Press enter to add image';
+        font-family: Verdana, Geneva, Tahoma, sans-serif;
+        color: #aaa;
+        display: block;
+        margin-top: 0.2em;
+        font-size: 0.8em;
+    }
+
+    #linkInputWrapper:not(.typing):after{
+        opacity: 0;
     }
     
     #linkInputWrapper button{
@@ -126,7 +142,7 @@
         </label>
 
         <div v-if="src === null">
-            <div id="linkInputWrapper" v-if="source === 1">
+            <div id="linkInputWrapper" :class="{'typing': !src && enteringLink}" v-if="source === 1">
                 <input type="text" placeholder="Enter image link and press enter" 
                 @keyup.enter="src = $event.target.value"
                 @keyup.ctrl.86="src = $event.target.value"
@@ -157,6 +173,7 @@
 <script>
 import FileUploader from "./FileUploader";
 import UnsplashSearch from "./UnsplashSearch";
+import Visibility from "visibilityjs";
 
 export default {
     props: {
@@ -167,13 +184,24 @@ export default {
     mounted(){
         this.source = this.imageUploadUrl && this.imageUploadUrl.length ? 0 : 1;
         this.src = this.url && this.url.length ? this.url : null;
+        Visibility.change((e, state) => {
+            if(state === 'visible'){
+                if(this.source === 1){
+                    // Hack to reload clipboard text
+                    this.source = -1;
+                    setTimeout(() => {
+                        this.source = 1;
+                    });
+                }
+            }
+        });
     },
     data() {
         return {
             enteringLink: false,
             clipboardText: null,
             src: null,
-            source: 0
+            source: 2
         }
     },
     watch: {
@@ -201,7 +229,7 @@ export default {
                     .then(text => {
                         if(text && text.length && this._isValidURL(text)){
                             this.clipboardText = text;
-                            console.log('Pasted content: ', text);
+                            // console.log('Pasted content: ', text);
                         }else{
                             this.clipboardText = null;
                         }
