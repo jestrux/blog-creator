@@ -26,7 +26,8 @@ export default {
     computed: {
         id: function(){
             var reg = /^.*(youtu\.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/
-            var match = this.options.url.match(reg);
+            const src = this.options.url || this.options.source;
+            var match = src.match(reg);
             return match[2];
         },
         image: function(){

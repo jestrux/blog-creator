@@ -184,7 +184,7 @@
           this.fetched = true;
           this.results = results;
           this.fetching = false;
-          console.log("Api result", results);
+          // console.log("Api result", results);
         })
         .catch(err => {
           this.fetched = true;

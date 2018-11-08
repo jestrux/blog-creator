@@ -174,8 +174,6 @@ export default {
         const parent = this.$root.$children[0];
         this.youtubeApiKey = parent.youtubeApiKey;
 
-        console.log(parent.youtubeApiKey);
-
         // set dynamic height for youtube video
         this.videoHeight = this.$el.getBoundingClientRect().width * 9 / 16;
 

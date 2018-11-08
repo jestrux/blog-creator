@@ -242,7 +242,7 @@
             this.fetched = true;
             this.results = videos;
             this.fetching = false;
-            console.log("Api result", videos);
+            // console.log("Api result", videos);
           },
           err => {
             this.fetched = true;
