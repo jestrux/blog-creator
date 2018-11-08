@@ -69,8 +69,7 @@ function UploadFile(file){
             const res = result.data;
             const payload = res.success ? res.path : res.msg;
             em.emit("complete", res.success, payload);
-        }).catch(error => {
-            // console.log("Error", error);
-            em.emit("complete", false, error);
+        }).catch(() => {
+            em.emit("complete", false, "A network or server error occured!");
         });
 }

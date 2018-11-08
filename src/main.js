@@ -1,6 +1,6 @@
 import Vue from 'vue'
 import BlogCreator from './components/BlogCreator.vue'
-// import BcImageField from './components/BCImageField.vue'
+// import BCYoutubeField from './components/BCYoutubeField'
 
 // window._ = require('lodash');
 // window.axios = require('axios');
@@ -10,6 +10,8 @@ import BlogCreator from './components/BlogCreator.vue'
 Vue.config.productionTip = true
 
 Vue.component('blog-creator', BlogCreator);
+
+// &#8202;—&#8202;
 
 new Vue({
     el: '#app'

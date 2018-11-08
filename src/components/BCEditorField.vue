@@ -30,7 +30,7 @@
 
 <template>
     <div>
-        <label v-if="!nolabel && field.type !== 'image'">{{field.name}}</label>
+        <label v-if="!nolabel && field.type !== 'image' && field.type !== 'youtube'">{{field.name}}</label>
         
         <input v-if="field.type == 'number'" type="number" v-model="field.value">
 
@@ -47,10 +47,13 @@
         <vue-editor v-else-if="field.type == 'ws-text'" :editorToolbar="customToolbar" v-model="field.value"></vue-editor>
         
         <bc-image-field
-            v-else-if="field.type == 'image'" v-model="field.value"
-            :url="field.value"
-            :image-upload-url="imageUploadUrl"
-            :unsplash-client-id="unsplashClientId"/>
+            v-else-if="field.type == 'image'" 
+            v-model="field.value"
+            :url="field.value"/>
+        
+        <bc-youtube-field
+            v-else-if="field.type == 'youtube'" v-model="field.value"
+            :url="field.value"/>
         
         <textarea ref="input" v-else rows="1" :placeholder="field.default" v-model="field.value"></textarea>
     </div>
@@ -60,19 +63,23 @@
 import { VueEditor } from "vue2-editor";
 import autosize from 'autosize'
 import BcImageField from "./BCImageField";
+import BCYoutubeField from "./BCYoutubeField";
 
 export default {
     props: {
         field : Object,
-        nolabel: Boolean,
-        imageUploadUrl: String,
-        unsplashClientId: String
+        nolabel: Boolean
     },
     mounted: function(){
         const input = this.$refs.input;
         if(input){
             autosize(input);
         }
+
+        // const parent = this.$root.$children[0];
+        // this.imageUploadUrl = parent.imageUploadUrl;
+        // this.unsplashClientId = parent.unsplashClientId;
+        // this.youtubeApiKey = parent.youtubeApiKey;
     },
     watch: {
         field: {
@@ -97,7 +104,8 @@ export default {
     },
     components: {
       VueEditor,
-      BcImageField
+      BcImageField,
+      'bc-youtube-field' : BCYoutubeField
     }
 }
 </script>

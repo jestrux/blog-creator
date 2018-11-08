@@ -47,6 +47,20 @@
       align-items: center;
       justify-content: center;
     }
+
+    #error{
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      text-align: center;
+      background: rgba(199, 76, 76, 0.97);
+      color: #fff;
+    }
 </style>
 
 <template>
@@ -58,6 +72,12 @@
     <div id="loader" v-if="uploading">
       <span></span>
       Uploading... {{progress}}%
+    </div>
+    
+    <div id="error" v-if="upload_error != null">
+      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z"/></svg>
+      {{ upload_error }}
+      <span id="errorCloser" @click="upload_error = null">Close</span>
     </div>
   </div>
 </template>
@@ -77,6 +97,7 @@
     data: function() {
       return{
         uploading: false,
+        upload_error: null,
         progress: 0,
         src: ""
       }
@@ -96,12 +117,14 @@
         self.progress = progress;
       });
       
-      em.once('complete', function(status, src) {
+      em.once('complete', function(status, payload) {
         self.uploading = false;
-        // console.log("Completed successfully: ", status, src);
+        // console.log("Completed successfully: ", status, payload);
 
         if(status)
           self.$emit("input", src);
+        else
+          this.upload_error = payload;
       });
     },
     methods: {

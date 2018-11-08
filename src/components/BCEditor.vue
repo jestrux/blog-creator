@@ -107,8 +107,6 @@
                     :key="index">
 
                     <bc-editor-field
-                        :image-upload-url="imageUploadUrl"
-                        :unsplash-client-id="unsplashClientId"
                         :field="field" :nolabel="element.component === 'bc-text'"
                         ></bc-editor-field>
 
@@ -145,8 +143,6 @@ export default {
     props: {
         element: Object,
         editting: Boolean,
-        imageUploadUrl: String,
-        unsplashClientId: String,
         inline: {
             type: Boolean,
             default: false

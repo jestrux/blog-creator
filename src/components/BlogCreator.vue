@@ -60,6 +60,7 @@
         position: absolute;
         top: 0;
         left: -50px;
+        outline: none;
     }
 
     #insightTitle .component-editor-buttons,
@@ -309,7 +310,10 @@
                     </div>
                     <span id="insightDate">
                         <!-- Published {{date | formatDate}} -->
-                        By <input type="text" placeholder="Enter author's name here" v-model="author">
+                        By <input type="text" 
+                            placeholder="Enter author's name here" 
+                            v-model="author"
+                            @keyup="autosave()">
                     </span>
                 </div>
 
@@ -408,8 +412,14 @@
             blog: Object,
             saveUrl: String,
             imageUploadUrl: String,
-            unsplashClientId: String
+            unsplashClientId: String,
+            youtubeApiKey: String
         },
+
+        // provide: {
+        //     imageUploadUrl: this.imageUploadUrl,
+        //     unsplashClientId: this.unsplashClientId
+        // },
 
         data(){
             return {
@@ -439,6 +449,7 @@
                 ],
                 coverImageElement: {
                     name: 'Cover Image',
+                    label: 'Cover Image',
                     component: 'cover',
                     skeleton: {
                         url: {

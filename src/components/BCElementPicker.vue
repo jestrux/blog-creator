@@ -37,6 +37,8 @@
         width: 24px;
         border-radius: 50%;
         line-height: 1;
+        z-index: 1;
+        outline: none;
     }
 
     #closer svg{
@@ -84,10 +86,21 @@
         transform: translate3d(-50%, 50%, 0);
         opacity: 0;
     }
+
+    #elementPickerBg{
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: auto;
+    }
 </style>
 
 <template>
     <div id="elementPicker">
+        <div id="elementPickerBg" @click="$emit('cancel')" v-show="show"></div>
         <transition @before-enter="beforeEnter" @enter="enter" @leave="leave" :css="true">
             <div id="elementsWrapper" v-show="show">
                 <label id="title">Add Element</label>

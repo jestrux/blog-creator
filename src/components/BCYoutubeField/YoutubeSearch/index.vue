@@ -35,12 +35,6 @@
     outline: none;
   }
 
-  #results{
-    margin-top: 0.8em;
-    columns:3;
-    column-gap: 0.2em;
-  }
-
   #emptyMessage{
     padding-top: 0.5em;
     padding-bottom: 0.3em;
@@ -49,9 +43,78 @@
     font-size: 0.9em;
   }
 
-  #results img{
+  #results{
+    margin-top: 0.8em;
+    margin-right: -0.5em;
+    /* columns:3;
+    column-gap: 0.2em; */
+    /* padding-bottom: 2em; */
+  }
+
+  #results > div{
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    flex-wrap: wrap;
+    position: relative;
+  }
+
+  .video-list-item{
+    position: relative;
+    flex-shrink: 0;
+    flex-basis: 50%;
+    position: relative;
+    cursor: pointer;
+    transition: transform 0.15s ease-out;
+    z-index: 2;
+    position: relative;
+    margin-bottom: 0.5em;
+  }
+
+  .video-list-item:hover{
+    /* transform: scale(1.1); */
+  }
+
+  .video-list-item-thumb{
+    width: 95%;
+    width: calc(100% - 0.5em);
+    height: 150px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    background: #333;
+    border-radius: 2px;
+  }
+
+  .video-list-item img{
     width: 100%;
-    /* margin-bottom: -0.1em; */
+    height: 200px;
+    object-fit: cover;
+    object-position: center;
+  }
+
+  .video-list-item:before{
+    /* content: ''; */
+    /* box-shadow: 0 0 20px rgba(0, 0, 0, 0.2); */
+  }
+
+  .video-list-item-caption{
+    /* padding: 1em; */
+    padding: 0.6em 0;
+    background: rgba(255, 255, 255, 0.95);
+    overflow: hidden;
+    line-height: 1.1em;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+  }
+
+  .video-list-item-caption span{
+    font-size: 0.9em;
+  }
+
+  /* #results img{
+    width: 100%;
     min-height: 83px;
     background-color: #eee;
 	  display:inline-block;
@@ -61,7 +124,7 @@
   
   #results img:hover{
     opacity: 0.7;
-  }
+  } */
 
   #movers{
     position: absolute;
@@ -94,7 +157,7 @@
     <input type="text" v-model="query" 
       placeholder="Enter keywords and press enter"
       @keyup="startedTyping($event.target.value)"
-      @keyup.enter="searchUnsplash($event.target.value)"/>
+      @keyup.enter="searchYoutube($event.target.value)"/>
     
     <div id="movers" v-if="fetched && results.length > perPage">
       <button :class="{'clickable' : page > 1}"
@@ -104,20 +167,28 @@
         @click="page = page+1">Next</button>
     </div>
 
-    <div v-if="!typing && fetched && results.length" id="results">
-      <img v-for="(image, index) in results" 
-        v-if="index >= (page - 1) * perPage && index < page * perPage"
-        :style="{ background: image.color }"
-        :key="index" :src="image.urls.small" alt=""
-        @click="selectImage(image.urls.full)">
+    <div id="results" v-if="!typing && fetched && results.length">
+      <div>
+        <div :title="video.title" class="video-list-item" v-for="(video, index) in results"
+          v-if="index >= (page - 1) * perPage && index < page * perPage"
+          :key="index"
+          @click="selectVideo(video.url)">
+          <div class="video-list-item-thumb">
+              <img :src="video.image" :alt="video.title" />
+          </div>
+          <div class="video-list-item-caption">
+            <span>{{video.title.substr(0, 30) + (video.title.length > 30 ? '...' : '')}}</span>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div id="emptyMessage" v-if="!typing && (fetching || fetch_error || (fetched && !results.length))">
       <span v-if="fetching">
-        Fetching images....
+        Fetching videos....
       </span>
       <span v-else-if="fetch_error" style="color: #dd5555">
-        An error occured fetching images, check your network connection and try again.
+        An error occured fetching videos, check your network connection and try again.
       </span>
       <span v-else-if="!results.length">
         No results found for <strong>{{query}}</strong>
@@ -128,7 +199,8 @@
 
 <script>
   import axios from 'axios';
-  import Unsplash, { toJson } from 'unsplash-js';
+  import YTSearch from './Search'
+  import results from './results'
 
   var self;
   
@@ -138,7 +210,7 @@
         type: String,
         default: 10
       },
-      clientId: String
+      apiKey: String
     },
     data: function() {
       return{
@@ -151,18 +223,13 @@
         typing: false
       }
     },
-    mounted: function() {
-      self = this;
-
-      
-    },
     methods: {
       startedTyping(val){
         this.typing = val;
         this.fetched = false;
         this.results = [];
       },
-      searchUnsplash(q){
+      searchYoutube(q){
         this.fetching = true;
         this.fetched = false;
         this.fetch_error = false;
@@ -170,30 +237,21 @@
         this.page = 1;
         this.typing = false;
 
-        axios.get('https://api.unsplash.com/search/photos', {
-          params: {
-            query: q,
-            per_page: 24,
-            client_id: this.clientId
-          }
-        })
-        .then(res => {
-          const results = res.data.results.map( ({ color, description, urls, user }) => {
-            return { color, description, urls, user };
-          });
-          this.fetched = true;
-          this.results = results;
-          this.fetching = false;
-          console.log("Api result", results);
-        })
-        .catch(err => {
-          this.fetched = true;
-          this.fetching = false;
-          this.fetch_error = true;
-          console.log("Api error", err);
-        })
+        YTSearch({key: this.apiKey, term: q, maxResults: 16}, 
+          videos => {
+            this.fetched = true;
+            this.results = videos;
+            this.fetching = false;
+            console.log("Api result", videos);
+          },
+          err => {
+            this.fetched = true;
+            this.fetching = false;
+            this.fetch_error = true;
+            console.log("Api error", err);
+          })
       },
-      selectImage(url){
+      selectVideo(url){
         this.$emit("input", url)
       }
     }
