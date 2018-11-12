@@ -2,7 +2,7 @@
     export default {
         props: {
             options : Object,
-            component : Object,
+            component : String,
             html: String
         },
         data: function(){
@@ -15,6 +15,13 @@
             this._emitHTML();
         },
         watch: {
+            component: {
+                immediate: true,
+                handler(val){
+                    this._emitHTML();
+                },
+                deep: true
+            },
             options: {
                 immediate: true,
                 handler(val){

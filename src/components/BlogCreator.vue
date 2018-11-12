@@ -319,7 +319,7 @@
 
                 <div ref="content" class="blog-content" style="min-height: calc(100vh - 330px)">
                     <template v-for="(element, index) in elements">
-                        <div :key="index" :class="['blogpost-section-wrapper', 
+                        <div :ref="'sectionWrapper' + element.id" :key="index" :class="['blogpost-section-wrapper', 
                             {'wide-image': (element.component === 'bc-image' || element.component === 'bc-youtube-video') && element.options.width === 'wide'},
                             {'full-image': (element.component === 'bc-image' || element.component === 'bc-youtube-video') && element.options.width === 'full'}
                             ]">
@@ -343,6 +343,12 @@
                                     </button>
                                 </div>
 
+                                <emoji-autocomplete 
+                                    v-if="element.component == 'bc-text' && colon_is_active && element.active && emojiFilter && emojiFilter.length > 0"
+                                    :filter="emojiFilter"
+                                    :pos="emojiPosition"
+                                    @selected="pushEmoji(element.id, $event)"/>
+
                                 <vue-editor
                                     :placeholder="element.options.default" 
                                     :ref="'inlineEditor' + element.id"
@@ -356,9 +362,12 @@
                                     @text-change="textChanged($event, element.id)"
                                     @selection-change="selectionChanged(element.id, $event)"
                                     @keyup.native.delete="deleteClicked(element.id)"
-                                    @keyup.native.shift.enter="enterClicked(element.id)"
-                                    @keyup.native="autosave()"/>
+                                    @keyup.native.189="dashClicked(element.id)"
+                                    @keyup.native.shift.186="colonClicked(element.id)"
+                                    @keyup.native.enter="enterClicked(element.id)"
+                                    @keyup.native="onKeyUp($event, element.id)"/>
 
+                                    <!-- @keyup.native.shift.enter="enterClicked(element.id)" -->
                                 <component
                                     v-else
                                     :is="element.component"
@@ -389,6 +398,8 @@
 
     import { choices } from '../choices'
 
+    import emojis from '../emojis'
+
     import { db_blog } from '../blog'
 
     import { VueEditor, Quill } from 'vue2-editor'
@@ -404,8 +415,10 @@
     import BCQuote from './BCQuote.vue'
     import BCYoutubeVideo from './BCYoutubeVideo.vue'
     import BCImage from './BCImage.vue'
+    import BCSeparator from './BCSeparator.vue'
     
     import BCEditor from './BCEditor.vue'
+    import EmojiAutoComplete from './EmojiAutoComplete'
 
     export default {
         props:{
@@ -434,6 +447,9 @@
                 choices : choices,
                 elements : [],
                 editting: false,
+                colon_is_active: false,
+                emojiFilter: null,
+                emojiPosition: null,
                 curelement: {},
                 arranging: false,
                 handler: new Vue(),
@@ -503,7 +519,8 @@
             }catch(err){
                 this.title = "";
                 this.elements = [];
-                console.log("Error parsing blog:", err);
+                // console.log("Error parsing blog:", err);
+                console.log("Error parsing blog:");
 
                 //when creating new blogpost
                 this.addBufferText();
@@ -561,6 +578,9 @@
                 const text_behind = this.getSelectionHtml(back_content);
                 const text_forward = this.getSelectionHtml(forward_content).replace("<p><br></p>", "");
 
+                if(text_forward.length > 0)
+                    return;
+
                 // console.log("Text behind:", text_behind);
                 // console.log("Text forward:", text_forward);
 
@@ -585,18 +605,131 @@
                     new_editor[0].quill.focus();
                 }, 5);
             },
+            dashClicked: function(id){
+                const idx = _.findIndex(this.elements, ['id', id]);
+                let el = this.elements[idx];
+
+                const old_html = this.quill.root.innerHTML;
+                const is_second_dash = old_html[old_html.length - 6] === '-';
+
+                if(!is_second_dash)
+                    return;
+
+                const cursor = this.quill.getSelection();
+
+                if(!cursor)
+                    return;
+                
+                const last_index_of_p = cursor.index;
+
+                const back_content = this.quill.getContents(0, last_index_of_p);
+                let text_behind = this.getSelectionHtml(back_content);
+
+                text_behind += '&mdash;'
+                text_behind = text_behind.replace("--</p>&mdash;", "&mdash;</p>");
+                this.quill.root.innerHTML = text_behind;
+
+                // unfocus and focus the cursor to place it at the end after adding long dash
+                this.quill.blur();
+                setTimeout(() => {
+                    this.$refs[`inlineEditor${id}`][0].quill.focus()
+                }, 10);
+            },
+            colonClicked: function(id){
+                this.colon_is_active = true;
+                console.log("Colon clicked....");
+            },
+            pushEmoji: function(id, emoji){
+                console.log("Pushing emoji: ", emoji);
+                this.quill.focus();
+
+                const idx = _.findIndex(this.elements, ['id', id]);
+                let el = this.elements[idx];
+
+                const cursor = this.quill.getSelection();
+
+                if(!cursor)
+                    return;
+                
+                const last_index_of_p = cursor.index;
+
+                const back_content = this.quill.getContents(0, last_index_of_p);
+                let text_behind = this.getSelectionHtml(back_content);
+
+                text_behind += emoji;
+                text_behind = text_behind.replace(`:${this.emojiFilter}</p>${emoji}`, emoji + "</p>");
+                this.quill.root.innerHTML = text_behind;
+
+                // unfocus and focus the cursor to place it at the end after adding long dash
+                this.quill.blur();
+                setTimeout(() => {
+                    this.$refs[`inlineEditor${id}`][0].quill.focus();
+                    this.emojiFilter = "";
+                    this.colon_is_active = false;
+                }, 10);
+            },
             deleteClicked: function(id){
                 const idx = _.findIndex(this.elements, ['id', id]);
                 const is_last = idx == this.elements.length - 1;
                 let el = this.elements[idx];
 
-                if(idx != 0 && !is_last && !el.options.text.length){
-                    if(!el.next_to_last_click){
-                        el.next_to_last_click = true;
-                        this.saveElement(el);
+                if(el && el.has_text){
+                    return;
+                }
+
+                if(el.options.text.length < 1 && idx != 0 && (!is_last || this.elements[idx - 1].component === 'bc-text')){
+                    this.removeElement(id);
+                    this.$refs[`inlineEditor${this.elements[idx - 1].id}`][0].quill.focus();
+                }else{
+                    this.saveElement(el);
+                }
+            },
+            onKeyUp: function(event, id){
+                // return console.log(event);
+                if(this.colon_is_active){
+                    const idx = _.findIndex(this.elements, ['id', id]);
+                    let el = _.cloneDeep(this.elements[idx]);
+
+                    const old_html = el.options.text.replace(/(<([^>]+)>)/ig,"");
+                    const text = old_html.substr(old_html.lastIndexOf(':') + 1, old_html.length);
+
+                    // console.log("Text after colon", old_html.length, old_html.lastIndexOf(':'));
+
+                    if(old_html.lastIndexOf(':') == -1 || ( old_html.length - old_html.lastIndexOf(':') ) >= 16){
+                        this.emojiFilter = "";
+                        return;
+                    }else{
+                        this.emojiFilter = text;
                     }
-                    else{
-                        this.removeElement(id);
+
+                    var range = this.quill.getSelection();
+                    if (range) {
+                        if (text.length > 0 && range.length == 0) {
+                            // console.log("positions", this.quill.getBounds(range.index));
+
+                            const bounds = this.quill.getBounds(this.quill.getLength());
+                            const editorWrapper = this.$refs[`sectionWrapper${id}`][0];
+                            const editor = this.$refs[`inlineEditor${id}`][0].$el;
+                            const editorRect = editor.getBoundingClientRect();
+                            
+                            let dx = 0;
+
+                            const autocompletediff = bounds.left + 180 - editorRect.width;
+                            if(autocompletediff > 0){
+                                dx = autocompletediff / 2;
+                            }
+
+                            this.emojiPosition = { top: bounds.top + 36, left : bounds.left - dx}
+                            // console.log("position: ", editorWrapper.offsetTop);
+                        }
+                    }
+                }else{
+                    const idx = _.findIndex(this.elements, ['id', id]);
+                    let el = this.elements[idx];
+
+                    if(el){
+                        el.has_text = el.options.text.length > 0;
+                        this.saveElement(el);
                     }
                 }
             },
@@ -608,7 +741,7 @@
             },
             addElement(el, auto_edit = true, add_pos){
                 this.showChoices = {};
-                if(!auto_edit){
+                if(!auto_edit || el.component == 'bc-separator'){
                     this.saveElement(el, true, add_pos);
                 }
                 else{
@@ -692,6 +825,13 @@
                                         quill.focus();
                                     }
                                 }, 5);
+                            }else if(e.component === 'bc-separator'){
+                                this.addBufferText("Continue writting here...", this.elements.length);
+                                
+                                setTimeout(() => {
+                                    const new_editor = this.$refs[`inlineEditor${this.elements[this.elements.length - 1].id}`];
+                                    new_editor[0].quill.focus();
+                                }, 5);
                             }
 
                             this.autosave();
@@ -709,7 +849,20 @@
                 this.editting = false;
             },
             elementToggleFocus: function(ev, id, focused = true){
-                this.quill = focused ? ev : {};
+                const idx = _.findIndex(this.elements, ['id', id]);
+                const e = this.elements[idx];
+
+                if(focused){
+                    e.active = focused;
+                    this.quill = ev;
+                }
+                else{
+                    e.active = this.colon_is_active
+                    if(!this.colon_is_active)
+                        this.quill = {};
+                }
+
+                this.saveElement(e);
             },
             textChanged: function(ev, id){
                 const idx = _.findIndex(this.elements, ['id', id]);
@@ -832,6 +985,7 @@
                         if(res.new_id){
                             this.blogId = res.new_id;
                         }
+
                         if(res.redirect_url)
                             history.pushState({}, "editting", res.redirect_url);
                     }, error => {
@@ -876,7 +1030,9 @@
             'bc-youtube-video': BCYoutubeVideo,
             'file-uploader': FileUploader,
             'bc-image': BCImage,
-            'vue-editor': VueEditor
+            'bc-separator': BCSeparator,
+            'vue-editor': VueEditor,
+            'emoji-autocomplete': EmojiAutoComplete
         },
 
         filters: {

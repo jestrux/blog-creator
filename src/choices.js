@@ -84,5 +84,13 @@ export const choices = [
       //   choices: ['simple', 'wrapped']
       // },
     }
-  }
+  },
+  {
+    name: 'Separator',
+    icon: '<svg stroke="#333" viewBox="0 0 24 24" style="stroke-dasharray: 6;"><line x1="0" y1="12" x2="10" y2="12" /><line x1="12" y1="12" x2="24" y2="12" /></svg>',
+    component: 'bc-separator',
+    options: {
+      centered: 'false'
+    }
+  },
 ]
