@@ -398,8 +398,6 @@
 
     import { choices } from '../choices'
 
-    import emojis from '../emojis'
-
     import { db_blog } from '../blog'
 
     import { VueEditor, Quill } from 'vue2-editor'
