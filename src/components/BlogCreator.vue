@@ -114,6 +114,15 @@
         z-index: 2;
     }
 
+    .component-editor-buttons.delete-only{
+        padding: 0 0.5em;
+        margin-top: -0.15em;
+    }
+
+    .component-editor-buttons.delete-only button:first-child{
+        display: none;
+    }
+
     .blogpost-section-wrapper:not(:hover) 
     .component-editor-buttons:not(:hover),
     .blogpost-section-wrapper:not(:hover) 
@@ -330,7 +339,7 @@
                                     <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
                                 </button>
 
-                                <div class="component-editor-buttons"
+                                <div class="component-editor-buttons" :class="{'delete-only' : element.component === 'bc-separator'}"
                                     v-if="element.component != 'bc-text'">
                                     <button class="component-editor-button"
                                         @click="editElement(element)">
@@ -497,10 +506,10 @@
             
             try{
                 const blog = JSON.parse(this.blog);
-                
-                this.title = blog.title;
+
+                this.title = blog.title.replace(/\\'/g, "'");
                 this.blogId = blog.id;
-                this.author = blog.author;
+                this.author = blog.author.replace(/\\'/g, "'");;
 
                 const creator_json = JSON.parse(blog.creator_json);
                 

@@ -523,7 +523,6 @@ body {
           justify-content: space-between;
   z-index: 1;
   height: 40px;
-  min-width: 340px;
   -webkit-transition: opacity 0.1s ease-out, -webkit-transform 0.1s ease-out;
   transition: opacity 0.1s ease-out, -webkit-transform 0.1s ease-out;
   transition: opacity 0.1s ease-out, transform 0.1s ease-out;
@@ -542,8 +541,15 @@ body {
 }
 
 .inline-editor .ql-snow .ql-editor h2,
+.inline-editor .ql-snow .ql-editor h2 strong,
+.inline-editor .ql-snow .ql-editor h3,
+.inline-editor .ql-snow .ql-editor h3 strong {
+  font-family: Bariol, sans-serif !important;
+  font-weight: bold;
+}
+
+.inline-editor .ql-snow .ql-editor h2,
 .inline-editor .ql-snow .ql-editor h3 {
-  font-family: "Bariol Bold", sans-serif;
   color: #444;
   font-size: 1.7em !important;
   margin-top: 0.3em !important;
