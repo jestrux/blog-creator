@@ -76,7 +76,7 @@
     }
     
     #linkInputWrapper:after{
-        position: absolute;
+        position: relative;
         content: 'Press enter to add image';
         font-family: Verdana, Geneva, Tahoma, sans-serif;
         color: #aaa;
@@ -86,7 +86,8 @@
     }
 
     #linkInputWrapper:not(.typing):after{
-        opacity: 0;
+        /* opacity: 0; */
+        display: none;
     }
     
     #linkInputWrapper button{
