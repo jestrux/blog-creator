@@ -15,14 +15,13 @@ class MySQLDatabase {
 	}
 
 	public function open_connection() {
-		$this->connection = mysqli_connect(DB_SERVER, DB_USER, DB_PASS);
-		if (!$this->connection) {
-			die("Database connection failed: " . mysqli_error($this->connection));
-		} else {
+		$this->connection = mysqli_connect(DB_SERVER, DB_USER, DB_PASS, '', DB_PORT, DB_SOCKET);
+		if (!$this->connection)
+			die("Database connection failed: " . mysqli_connect_error($this->connection));
+		else {
 			$db_select = mysqli_select_db($this->connection, DB_NAME);
-			if (!$db_select) {
+			if (!$db_select)
 				die("Database selection failed: " . mysqli_error($this->connection));
-			}
 		}
 	}
 
