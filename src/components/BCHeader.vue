@@ -31,7 +31,7 @@ export default {
     header{
         z-index: 10;
         position: fixed;
-        top: 0;
+        bottom: 0;
         left: 0;
         width: 100%;
         box-shadow: 0 1px 6px rgba(0, 0, 0, 0.1);

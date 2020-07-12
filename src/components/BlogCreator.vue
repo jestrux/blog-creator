@@ -3,6 +3,17 @@
         box-sizing: border-box;
     }
 
+    body{
+        background: #ddd;
+    }
+
+    #insightBody{
+        width: calc(var(--wrapper-width) + 140px);
+        margin: 0 auto;
+        padding: 8px 70px;
+        background: #fff;
+    }
+
     #loader {
         position: absolute;
         top: 0;
@@ -48,7 +59,8 @@
     }
 
     #content{
-        margin-top: 120px;
+        margin-top: 40px;
+        margin-bottom: 80px;
     }
 
     .blogpost-section-wrapper{
@@ -377,12 +389,11 @@
                                     @keyup.native="onKeyUp($event, element.id)"/>
 
                                     <!-- @keyup.native.shift.enter="enterClicked(element.id)" -->
-                                <component
+                                <bc-ui-element
                                     v-else
-                                    :is="element.component"
-                                    :component="element.component"
-                                    :options="element.options"
-                                    v-model="element.options.html"/>
+                                    :element="element"
+                                    v-model="element.options.html"
+                                />
                             </div>
                         </div>
                     </template>
@@ -397,7 +408,6 @@
     import axios from 'axios'
     import _ from 'lodash'
     import moment from 'moment'
-    import FileUploader from "./FileUploader";
 
     Vue.filter('formatDate', function(value) {
         if (value) {
@@ -417,14 +427,8 @@
     import BCAside from './BCAside.vue'
     import BCElementPicker from './BCElementPicker.vue'
     
-    import BCText from './BCText.vue'
-    import BCAlert from './BCAlert.vue'
-    import BCQuote from './BCQuote.vue'
-    import BCYoutubeVideo from './BCYoutubeVideo.vue'
-    import BCImage from './BCImage.vue'
-    import BCSeparator from './BCSeparator.vue'
-    
-    import BCEditor from './BCEditor.vue'
+    import BCUIElement from './BCUIElement'
+    import BCEditor from './BCEditor'
     import EmojiAutoComplete from './EmojiAutoComplete'
 
     export default {
@@ -1030,14 +1034,8 @@
             'bc-header' : BCHeader,
             'bc-aside' : BCAside,
             'bc-element-picker' : BCElementPicker,
-            'bc-text' : BCText,
-            'bc-alert' : BCAlert,
             'bc-editor': BCEditor,
-            'bc-quote': BCQuote,
-            'bc-youtube-video': BCYoutubeVideo,
-            'file-uploader': FileUploader,
-            'bc-image': BCImage,
-            'bc-separator': BCSeparator,
+            'bc-ui-element': BCUIElement,
             'vue-editor': VueEditor,
             'emoji-autocomplete': EmojiAutoComplete
         },
