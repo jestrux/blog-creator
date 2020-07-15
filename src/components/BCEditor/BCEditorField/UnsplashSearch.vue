@@ -91,7 +91,7 @@
 
 <template>
   <div id="wrapper" :class="{'typing': !fetched && typing}">
-    <input type="text" v-model="query" 
+    <input ref="input" type="text" v-model="query" 
       placeholder="Enter keywords and press enter"
       @keyup="startedTyping($event.target.value)"
       @keyup.enter="searchUnsplash($event.target.value)"/>
@@ -105,11 +105,13 @@
     </div>
 
     <div v-if="!typing && fetched && results.length" id="results">
-      <img v-for="(image, index) in results" 
-        v-if="index >= (page - 1) * perPage && index < page * perPage"
-        :style="{ background: image.color }"
-        :key="index" :src="image.urls.small" alt=""
-        @click="selectImage(image.urls.full)">
+      <template v-for="(image, index) in results">
+        <img 
+          v-if="index >= (page - 1) * perPage && index < page * perPage"
+          :style="{ background: image.color }"
+          :key="index" :src="image.urls.small" alt=""
+          @click="selectImage(image.urls.full)">
+      </template>
     </div>
 
     <div id="emptyMessage" v-if="!typing && (fetching || fetch_error || (fetched && !results.length))">
@@ -152,9 +154,7 @@
       }
     },
     mounted: function() {
-      self = this;
-
-      
+      this.$refs.input.focus();
     },
     methods: {
       startedTyping(val){

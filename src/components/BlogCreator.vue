@@ -340,41 +340,17 @@
 
                 <div ref="content" class="blog-content" style="min-height: calc(100vh - 330px)">
                     <template v-for="(element, index) in elements">
-                        <div v-if="element.component == 'bc-text'" :key="index" class="blogpost-section-wrapper">
-                            <div class="component-wrapper" style="position: relative;">
-                                <button v-if="!element.options.text.length" 
-                                    class="component-editor-button show-options"
-                                    @click="showOptions($event.target, element)">
-                                    <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
-                                </button>
-
-                                <emoji-autocomplete 
-                                    v-if="colon_is_active && element.active && emojiFilter && emojiFilter.length > 0"
-                                    :filter="emojiFilter"
-                                    :pos="emojiPosition"
-                                    @selected="pushEmoji(element.id, $event)"/>
-
-                                <vue-editor
-                                    :placeholder="element.options.default" 
-                                    :ref="'inlineEditor' + element.id"
-                                    :key="index" class="inline-editor" :class="{'focused' : element.focused}"
-                                    v-model="element.options.text"
-                                    :value="element.options.text"
-                                    :editorToolbar="customToolbar"
-                                    @focus="elementToggleFocus($event, element.id)"
-                                    @blur="elementToggleFocus($event, element.id, false)"
-                                    @text-change="textChanged($event, element.id)"
-                                    @selection-change="selectionChanged(element.id, $event)"
-                                    @keyup.native.delete="deleteClicked(element.id)"
-                                    @keyup.native.189="dashClicked(element.id)"
-                                    @keyup.native.shift.186="colonClicked(element.id)"
-                                    @keyup.native.enter="enterClicked(element.id)"
-                                    @keyup.native="onKeyUp($event, element.id)" />
-
-                                    <!-- @keyup.native.shift.enter="enterClicked(element.id)" -->
-                                    <!-- v-model="element.options.html" -->
-                            </div>
-                        </div>
+                        <bc-text
+                            :ref="`textEditor${element.id}`"
+                            v-if="element.component == 'bc-text'"
+                            :key="index" 
+                            v-model="elements[index]"
+                            @showOptions="showOptions(...$event)"
+                            @enterClicked="addAndFocusTextField(index)"
+                            @deleteClicked="deleteClickedOnTextField(index)"
+                            @upClicked="upClickedOnTextField(index)"
+                            @downClicked="downClickedOnTextField(index)"
+                        />
 
                         <bc-ui-element
                             v-else
@@ -407,8 +383,6 @@
 
     import { db_blog } from '../blog'
 
-    import { VueEditor, Quill } from 'vue2-editor'
-
     import autosize from 'autosize'
 
     import BCHeader from './BCHeader.vue'
@@ -416,8 +390,8 @@
     import BCElementPicker from './BCElementPicker.vue'
     
     import BCUIElement from './BCUIElement'
+    import BCText from './BCUIElement/BCText'
     import BCEditor from './BCEditor'
-    import EmojiAutoComplete from './EmojiAutoComplete'
 
     export default {
         props:{
@@ -442,26 +416,13 @@
                 date: moment(new Date()).format("YYYY-MM-DDTHH:mm:ssZ"),
                 entry_idx: -1,
                 html_text: "",
-                quill: {},
                 choices : choices,
                 elements : [],
                 editting: false,
-                colon_is_active: false,
-                emojiFilter: null,
-                emojiPosition: null,
                 curelement: {},
                 arranging: false,
                 handler: new Vue(),
                 showChoices: {},
-                customToolbar: [
-                    { 'header': '1' },
-                    { 'header': '2' },
-                    'bold', 'italic', 
-                    // 'underline',
-                    // { 'list': 'ordered'}, 
-                    // { 'list': 'bullet' },
-                    'link'
-                ],
                 coverImageElement: {
                     name: 'Cover Image',
                     label: 'Cover Image',
@@ -509,17 +470,15 @@
                     console.log("creator_json found....");
                     this.elements = creator_json.elements;
                     this.cover = creator_json.cover;
-                }else{
-                    console.log("Creator json not found....");
                 }
+                else
+                    console.log("Creator json not found....");
 
                 if(!this.elements.length || _.last(this.elements).component != "bc-text")
                     this.addBufferText();
             }catch(err){
                 this.title = "";
                 this.elements = [];
-                // console.log("Error parsing blog:", err);
-                console.log("Error parsing blog:");
 
                 //when creating new blogpost
                 this.addBufferText();
@@ -540,10 +499,6 @@
                 this.addElement(this.getEmptyTextElement(text), false, idx);
             },
             
-            elementValueChanged($event){
-                console.log("Element value changed:", $event);
-            },
-            
             addCoverImage(){
                 this.addElement(_.cloneDeep(this.coverImageElement));
             },
@@ -553,195 +508,13 @@
                 this.publish();
             },
 
-            getSelectionHtml: function(selectedContent) {
-                var tempContainer = document.createElement('div')
-                var tempQuill = new Quill(tempContainer);
-                tempQuill.setContents(selectedContent);
-
-                return tempContainer.querySelector('.ql-editor').innerHTML;
-            },
-
-            enterClicked: function(id){
-                const cursor = this.quill.getSelection();
-
-                if(!cursor)
-                    return;
-                
-                const last_index_of_p = cursor.index;
-                    
-                const idx = _.findIndex(this.elements, ['id', id]);
-                let el = this.elements[idx];
-                // let clean_text = el.options.text.replace(/<(.|\n)*?>/g, '').replace(/&nbsp;/g, ' ');
-
-                const quill = this.$refs[`inlineEditor${id}`][0].quill;
-
-                const back_content = quill.getContents(0, last_index_of_p);
-                const forward_content = quill.getContents(last_index_of_p, quill.getLength());
-
-                const text_behind = this.getSelectionHtml(back_content);
-                const text_forward = this.getSelectionHtml(forward_content).replace("<p><br></p>", "");
-
-                if(text_forward.length > 0)
-                    return;
-
-                // console.log("Text behind:", text_behind);
-                // console.log("Text forward:", text_forward);
-
-                quill.blur();
-
-                quill.root.innerHTML = text_behind;
-                
-                let textnode = this.getEmptyTextElement("Continue right here");
-                this.addElement(textnode, false, idx + 1);
-
-                if(text_forward.length){ //not just the empty new line
-                    console.log("Adding forward text....");
-                    let textnode = this.getEmptyTextElement("Continue right here");
-                    textnode.options.text = text_forward;
-
-                    this.addElement(textnode, false, idx + 2);
-                }
-
-                setTimeout(() => {
-                    const new_editor = this.$refs[`inlineEditor${this.elements[idx + 1].id}`];
-                    console.log(new_editor);
-                    new_editor[0].quill.focus();
-                }, 5);
-            },
-            dashClicked: function(id){
-                const idx = _.findIndex(this.elements, ['id', id]);
-                let el = this.elements[idx];
-
-                const old_html = this.quill.root.innerHTML;
-                const is_second_dash = old_html[old_html.length - 6] === '-';
-
-                if(!is_second_dash)
-                    return;
-
-                const cursor = this.quill.getSelection();
-
-                if(!cursor)
-                    return;
-                
-                const last_index_of_p = cursor.index;
-
-                const back_content = this.quill.getContents(0, last_index_of_p);
-                let text_behind = this.getSelectionHtml(back_content);
-
-                text_behind += '&mdash;'
-                text_behind = text_behind.replace("--</p>&mdash;", "&mdash;</p>");
-                this.quill.root.innerHTML = text_behind;
-
-                // unfocus and focus the cursor to place it at the end after adding long dash
-                this.quill.blur();
-                setTimeout(() => {
-                    this.$refs[`inlineEditor${id}`][0].quill.focus()
-                }, 10);
-            },
-            colonClicked: function(id){
-                this.colon_is_active = true;
-                console.log("Colon clicked....");
-            },
-            pushEmoji: function(id, emoji){
-                console.log("Pushing emoji: ", emoji);
-                this.quill.focus();
-
-                const idx = _.findIndex(this.elements, ['id', id]);
-                let el = this.elements[idx];
-
-                const cursor = this.quill.getSelection();
-
-                if(!cursor)
-                    return;
-                
-                const last_index_of_p = cursor.index;
-
-                const back_content = this.quill.getContents(0, last_index_of_p);
-                let text_behind = this.getSelectionHtml(back_content);
-
-                text_behind += emoji;
-                text_behind = text_behind.replace(`:${this.emojiFilter}</p>${emoji}`, emoji + "</p>");
-                this.quill.root.innerHTML = text_behind;
-
-                // unfocus and focus the cursor to place it at the end after adding long dash
-                this.quill.blur();
-                setTimeout(() => {
-                    this.$refs[`inlineEditor${id}`][0].quill.focus();
-                    this.emojiFilter = "";
-                    this.colon_is_active = false;
-                }, 10);
-            },
-            deleteClicked: function(id){
-                const idx = _.findIndex(this.elements, ['id', id]);
-                const is_last = idx == this.elements.length - 1;
-                let el = this.elements[idx];
-
-                if(el && el.has_text){
-                    return;
-                }
-
-                if(el.options.text.length < 1 && idx != 0 && (!is_last || this.elements[idx - 1].component === 'bc-text')){
-                    this.removeElement(id);
-                    this.$refs[`inlineEditor${this.elements[idx - 1].id}`][0].quill.focus();
-                }else{
-                    this.saveElement(el);
-                }
-            },
-            onKeyUp: function(event, id){
-                // return console.log(event);
-                if(this.colon_is_active){
-                    const idx = _.findIndex(this.elements, ['id', id]);
-                    let el = _.cloneDeep(this.elements[idx]);
-
-                    const old_html = el.options.text.replace(/(<([^>]+)>)/ig,"");
-                    const text = old_html.substr(old_html.lastIndexOf(':') + 1, old_html.length);
-
-                    // console.log("Text after colon", old_html.length, old_html.lastIndexOf(':'));
-
-                    if(old_html.lastIndexOf(':') == -1 || ( old_html.length - old_html.lastIndexOf(':') ) >= 16){
-                        this.emojiFilter = "";
-                        return;
-                    }else{
-                        this.emojiFilter = text;
-                    }
-
-                    var range = this.quill.getSelection();
-                    if (range) {
-                        if (text.length > 0 && range.length == 0) {
-                            // console.log("positions", this.quill.getBounds(range.index));
-
-                            const bounds = this.quill.getBounds(this.quill.getLength());
-                            const editorWrapper = this.$refs[`sectionWrapper${id}`][0];
-                            const editor = this.$refs[`inlineEditor${id}`][0].$el;
-                            const editorRect = editor.getBoundingClientRect();
-                            
-                            let dx = 0;
-
-                            const autocompletediff = bounds.left + 180 - editorRect.width;
-                            if(autocompletediff > 0){
-                                dx = autocompletediff / 2;
-                            }
-
-                            this.emojiPosition = { top: bounds.top + 36, left : bounds.left - dx}
-                            // console.log("position: ", editorWrapper.offsetTop);
-                        }
-                    }
-                }else{
-                    const idx = _.findIndex(this.elements, ['id', id]);
-                    let el = this.elements[idx];
-
-                    if(el){
-                        el.has_text = el.options.text.length > 0;
-                        this.saveElement(el);
-                    }
-                }
-            },
             showOptions(target, element){
                 this.entry_idx = _.findIndex(this.elements, ['id', element.id]);
 
                 const box = target.getBoundingClientRect();
                 this.showChoices = {status: true, position : {left: box.left, top:box.top}}
             },
+
             addElement(el, auto_edit = true, add_pos){
                 this.showChoices = {};
 
@@ -751,28 +524,68 @@
                 }
 
                 if(!auto_edit || el.component == 'bc-separator')
-                    this.saveElement(el, true, add_pos);
+                    return this.saveElement(el, true, add_pos);
                 else
-                    this.editElement(el);
+                    return this.editElement(el);
             },
+
             editElement: function(el){
                 this.curelement = el;
                 this.editting = true;
             },
+
             removeElement: function(id){
                 var idx = _.findIndex(this.elements, ['id', id]);
                 this.elements.splice(idx, 1);
                 this.autosave();
             },
+            
+            upClickedOnTextField(index){
+                const elementAbove = this.elements[index - 1];
+
+                if(elementAbove && elementAbove.component === 'bc-text')
+                    this.$refs[`textEditor${elementAbove.id}`][0].focus();
+            },
+            
+            downClickedOnTextField(index){
+                const elementBelow = this.elements[index + 1];
+
+                if(elementBelow && elementBelow.component === 'bc-text')
+                    this.$refs[`textEditor${elementBelow.id}`][0].focus();
+            },
+            
+            deleteClickedOnTextField(index){
+                const is_last = index == this.elements.length - 1;
+                const elementAbove = this.elements[index - 1];
+
+                if(index != 0 && (!is_last || elementAbove.component === 'bc-text')){
+                    this.removeElement(this.elements[index].id);
+                    this.$refs[`textEditor${elementAbove.id}`][0].focus();
+                }
+            },
+            
+            addAndFocusTextField(position){
+                const newEditorId = this.addElement(
+                    this.getEmptyTextElement('Continue writting here...'),
+                    false,
+                    position
+                );
+
+                setTimeout(() => {
+                    const new_editor = this.$refs[`textEditor${newEditorId}`][0];
+                    new_editor.focus();
+                }, 5);
+            },
+
             saveElement: function(e, not_edited, add_pos){
-                console.log("Save new elemnt value: ", e);
+                this.editting = false;
+                
                 if(!e)
                     return;
 
                 if(e.component === 'cover'){
                     this.cover = e;
                     this.curelement = {};
-                    this.editting = false;
 
                     this.publish();
                     return;
@@ -801,7 +614,8 @@
                     const last_element = _.last(this.elements);
 
                     // remove auto added last empty text element
-                    e.id = (Math.random() * 1e32).toString(36);
+                    const newRandomId = (Math.random() * 1e32).toString(36);
+                    e.id = newRandomId;
                     
                     if(add_pos && add_pos != -1){
                         console.log("Saving at position....");
@@ -826,101 +640,29 @@
 
                             if(!not_edited){
                                 if(this.entry_idx != -1)
-                                    this.addBufferText("Continue writting here...", this.entry_idx + 1);
+                                    this.addAndFocusTextField(this.entry_idx + 1);
                                 else
-                                    this.addBufferText();
-
-                                setTimeout(() => { //focus added buffer text
-                                    var cur_editor = this.$refs[`inlineEditor${e.id}`];
-                                    if(cur_editor){
-                                        var quill = cur_editor[0].quill;
-                                        quill.focus();
-                                    }
-                                }, 5);
-                            }else if(e.component === 'bc-separator'){
-                                this.addBufferText("Continue writting here...", this.elements.length);
-                                
-                                setTimeout(() => {
-                                    const new_editor = this.$refs[`inlineEditor${this.elements[this.elements.length - 1].id}`];
-                                    new_editor[0].quill.focus();
-                                }, 5);
+                                    this.addAndFocusTextField(this.entry_idx + 1);
                             }
+                            else if(e.component === 'bc-separator')
+                                this.addAndFocusTextField(this.elements.length);
 
                             this.autosave();
                         }
 
                         this.entry_idx = -1;
                     }
+
+                    return newRandomId;
                 }
 
                 this.curelement = {};
                 this.editting = false;
             },
+
             cancelEditting: function(){
                 this.curelement = {};
                 this.editting = false;
-            },
-            elementToggleFocus: function(ev, id, focused = true){
-                const idx = _.findIndex(this.elements, ['id', id]);
-                const e = this.elements[idx];
-
-                if(focused){
-                    e.active = focused;
-                    this.quill = ev;
-                }
-                else{
-                    e.active = this.colon_is_active
-                    if(!this.colon_is_active)
-                        this.quill = {};
-                }
-
-                this.saveElement(e);
-            },
-            textChanged: function(ev, id){
-                const idx = _.findIndex(this.elements, ['id', id]);
-                const e = this.elements[idx];
-
-                if(e.selected && this.quill){
-                    if(!this.quill.getSelection() || !this.quill.getSelection().length)
-                        e.focused = false;
-                }else{
-                    e.focused = false;
-                }
-
-                Vue.set(this.elements, idx, e);
-            },
-            selectionChanged: function(id, ev){
-                const idx = _.findIndex(this.elements, ['id', id]);
-                const e = this.elements[idx];
-                var selected = ev && ev.length > 0;
-                e.selected = selected;
-                
-                Vue.set(this.elements, idx, e);
-
-                const editor = this.$refs[`inlineEditor${id}`][0].$el;
-                const toolbar = editor.querySelector(".ql-toolbar");
-
-                e.focused = selected;
-
-                if(selected){
-                    const bounds = this.quill.getBounds(ev.index);
-                    // const dx = bounds.left >= 175 ? 175 : 0;
-                    var toolbarRect = toolbar.getBoundingClientRect();
-                    var editorRect = editor.getBoundingClientRect();
-                    
-                    let dx = 0;
-
-                    const toolbardiff = bounds.left + toolbarRect.width - editorRect.width;
-                    if(toolbardiff > 0){
-                        dx = toolbardiff / 2;
-                    }
-                    
-                    toolbar.style.top = bounds.top - 46 + "px";
-                    toolbar.style.left = bounds.left - dx + "px";
-                }else{
-                    toolbar.style.top = "-36px";
-                    toolbar.style.left = 0;
-                }
             },
 
             autosave: _.debounce(function(){
@@ -1037,8 +779,7 @@
             'bc-element-picker' : BCElementPicker,
             'bc-editor': BCEditor,
             'bc-ui-element': BCUIElement,
-            'vue-editor': VueEditor,
-            'emoji-autocomplete': EmojiAutoComplete
+            'bc-text': BCText
         },
 
         filters: {

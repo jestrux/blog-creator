@@ -26,7 +26,6 @@
 </template>
 
 <script>
-    import BCText from './BCText.vue'
     import BCAlert from './BCAlert.vue'
     import BCQuote from './BCQuote.vue'
     import BCYoutubeVideo from './BCYoutubeVideo.vue'
@@ -57,7 +56,6 @@
         },
 
         components : {
-            'bc-text' : BCText,
             'bc-alert' : BCAlert,
             'bc-quote': BCQuote,
             'bc-youtube-video': BCYoutubeVideo,
