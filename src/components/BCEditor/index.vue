@@ -107,8 +107,9 @@
                     :key="index">
 
                     <bc-editor-field
-                        :field="field" :nolabel="element.component === 'bc-text'"
-                        ></bc-editor-field>
+                        :nolabel="element.component === 'bc-text'"
+                        v-model="fields[index]"
+                    />
 
                 </div>
             </div>

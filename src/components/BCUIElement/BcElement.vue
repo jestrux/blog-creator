@@ -24,10 +24,10 @@
             },
             options: {
                 immediate: true,
-                handler(val){
+                deep: true,
+                handler(){
                     this._emitHTML();
-                },
-                deep: true
+                }
             }
         },
         methods: {

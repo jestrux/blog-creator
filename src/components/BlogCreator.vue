@@ -340,32 +340,16 @@
 
                 <div ref="content" class="blog-content" style="min-height: calc(100vh - 330px)">
                     <template v-for="(element, index) in elements">
-                        <div :ref="'sectionWrapper' + element.id" :key="index" :class="['blogpost-section-wrapper', 
-                            {'wide-image': (element.component === 'bc-image' || element.component === 'bc-youtube-video') && element.options.width === 'wide'},
-                            {'full-image': (element.component === 'bc-image' || element.component === 'bc-youtube-video') && element.options.width === 'full'}
-                            ]">
+                        <div v-if="element.component == 'bc-text'" :key="index" class="blogpost-section-wrapper">
                             <div class="component-wrapper" style="position: relative;">
-                                <button v-if="element.component == 'bc-text' && !element.options.text.length" 
+                                <button v-if="!element.options.text.length" 
                                     class="component-editor-button show-options"
                                     @click="showOptions($event.target, element)">
                                     <svg viewBox="0 0 24 24"><path d="M0 0h24v24H0z" fill="none"/><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-1 9h-4v4h-2v-4H9V9h4V5h2v4h4v2z"/></svg>
                                 </button>
 
-                                <div class="component-editor-buttons" :class="{'delete-only' : element.component === 'bc-separator'}"
-                                    v-if="element.component != 'bc-text'">
-                                    <button class="component-editor-button"
-                                        @click="editElement(element)">
-                                        <svg fill="#f18f16" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
-                                    </button>
-                                    <button class="component-editor-button"
-                                        @click="removeElement(element.id)">
-                                        <!-- color: #e04b2a;color: #f18f16; -->
-                                        <svg fill="#e04b2a" viewBox="0 0 24 24"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/><path d="M0 0h24v24H0z" fill="none"/></svg>
-                                    </button>
-                                </div>
-
                                 <emoji-autocomplete 
-                                    v-if="element.component == 'bc-text' && colon_is_active && element.active && emojiFilter && emojiFilter.length > 0"
+                                    v-if="colon_is_active && element.active && emojiFilter && emojiFilter.length > 0"
                                     :filter="emojiFilter"
                                     :pos="emojiPosition"
                                     @selected="pushEmoji(element.id, $event)"/>
@@ -374,7 +358,6 @@
                                     :placeholder="element.options.default" 
                                     :ref="'inlineEditor' + element.id"
                                     :key="index" class="inline-editor" :class="{'focused' : element.focused}"
-                                    v-if="element.component == 'bc-text'" 
                                     v-model="element.options.text"
                                     :value="element.options.text"
                                     :editorToolbar="customToolbar"
@@ -386,16 +369,21 @@
                                     @keyup.native.189="dashClicked(element.id)"
                                     @keyup.native.shift.186="colonClicked(element.id)"
                                     @keyup.native.enter="enterClicked(element.id)"
-                                    @keyup.native="onKeyUp($event, element.id)"/>
+                                    @keyup.native="onKeyUp($event, element.id)" />
 
                                     <!-- @keyup.native.shift.enter="enterClicked(element.id)" -->
-                                <bc-ui-element
-                                    v-else
-                                    :element="element"
-                                    v-model="element.options.html"
-                                />
+                                    <!-- v-model="element.options.html" -->
                             </div>
                         </div>
+
+                        <bc-ui-element
+                            v-else
+                            :key="element.id"
+                            :element="element"
+                            @input="element.options.html = $event"
+                            @editElement="editElement($event)"
+                            @removeElement="removeElement($event)"
+                        />
                     </template>
                 </div>
             </div>
@@ -550,6 +538,10 @@
             
             addBufferText(text, idx = -1){
                 this.addElement(this.getEmptyTextElement(text), false, idx);
+            },
+            
+            elementValueChanged($event){
+                console.log("Element value changed:", $event);
             },
             
             addCoverImage(){
@@ -752,19 +744,18 @@
             },
             addElement(el, auto_edit = true, add_pos){
                 this.showChoices = {};
-                if(!auto_edit || el.component == 'bc-separator'){
-                    this.saveElement(el, true, add_pos);
-                }
-                else{
-                    this.editElement(el);
-                }
-            },
-            editElement: function(el){
+
                 if(el.component != 'cover' && (!el.label || !el.label.length)){
                     let len = _.filter(this.elements, ['name', el.name]).length;
                     el.label = el.name + " " + len;
                 }
 
+                if(!auto_edit || el.component == 'bc-separator')
+                    this.saveElement(el, true, add_pos);
+                else
+                    this.editElement(el);
+            },
+            editElement: function(el){
                 this.curelement = el;
                 this.editting = true;
             },
@@ -774,6 +765,7 @@
                 this.autosave();
             },
             saveElement: function(e, not_edited, add_pos){
+                console.log("Save new elemnt value: ", e);
                 if(!e)
                     return;
 
@@ -794,7 +786,16 @@
                 }
 
                 if(idx != -1){
-                    Vue.set(this.elements, idx, e);
+                    this.elements = this.elements.map((elem, index) => {
+                        if(index === idx){
+                            return {
+                                ...e,
+                                id: (Math.random() * 1e32).toString(36)
+                            };
+                        }
+                        return elem;
+                    });
+                    // Vue.set(this.elements, idx, e);
                 }
                 else{
                     const last_element = _.last(this.elements);

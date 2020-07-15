@@ -67,14 +67,15 @@ import BCYoutubeField from "./BCYoutubeField";
 
 export default {
     props: {
-        field : Object,
+        value : Object,
         nolabel: Boolean
     },
     mounted: function(){
         const input = this.$refs.input;
-        if(input){
-            autosize(input);
-        }
+        if(input) autosize(input);
+
+        if(this.value)
+            this.field = this.value;
 
         // const parent = this.$root.$children[0];
         // this.imageUploadUrl = parent.imageUploadUrl;
@@ -84,13 +85,15 @@ export default {
     watch: {
         field: {
             immediate: true, 
-            handler (val, oldVal) {
-                
+            deep: true,
+            handler (newValue, oldVal) {
+                this.$emit('input', newValue);
             }
         }
     },
     data() {
         return {
+            field: {},
             blogHTML: "",
             customToolbar: [
                 [{ header: [false, 1, 2, 3, 4, 5, 6] }],
