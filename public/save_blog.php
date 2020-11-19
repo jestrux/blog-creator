@@ -15,19 +15,22 @@ if(isset($_POST['id'])){
 
 $title = $_POST['title'];
 
-if(isset($title) && strlen($title) > 0){
+if(isset($title) && strlen($title) > 0)
 	$blog->slug = createSlug($title);
-}
 	
 $blog->title = $title;
 $blog->body = $_POST['body'];
-$blog->creator_json = $_POST['creator_json'];
 $blog->slug = $_POST['slug'];
 $blog->cover_url = $_POST['cover_url'];
 $blog->author = $_POST['author'];
 $blog->published_at = $_POST['published_at'];
 
 $new_blog_id = $blog->save();
+
+if(!file_exists("blogs"))
+	mkdir("blogs");
+	
+file_put_contents("blogs/$new_blog_id.json", $_POST['creator_json']);
 
 if($new_blog_id){
 	if($is_new_blog)

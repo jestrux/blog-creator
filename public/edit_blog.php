@@ -1,7 +1,8 @@
 <?php
 	require_once 'includes/Blog.php';
 	$blog_id = $_GET['blog_id'];
-	$blog = Blog::find($blog_id);
+  $blog = Blog::find($blog_id);
+  $blog->creator_json = $blog->get_creator_json();
 	// echo json_encode($blog);
 ?>
 

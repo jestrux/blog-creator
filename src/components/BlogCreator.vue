@@ -527,7 +527,7 @@
                 this.title = "";
                 this.elements = [];
                 // console.log("Error parsing blog:", err);
-                console.log("Error parsing blog:");
+                console.log("Error parsing blog:", err);
 
                 //when creating new blogpost
                 this.addBufferText();
