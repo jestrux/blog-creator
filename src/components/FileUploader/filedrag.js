@@ -1,17 +1,21 @@
 import axios from 'axios';
 import EM from 'EventEmitter';
-export let em;
-var upload_path = "";
-export function Init(el, url) {
-    em = new EM();
-    upload_path = url;
+import S3FileUpload from './S3';
+// export let em;
+// var upload_path = "";
+function FileDrag(el, url, s3Config = {}) {
+    this.em = new EM();
+    this.upload_path = url;
+    this.s3Config = s3Config;
 
-    el.addEventListener("dragover", FileDragHover, false);
-    el.addEventListener("dragleave", FileDragHover, false);
-    el.addEventListener("drop", FileSelectHandler, false);
+    el.addEventListener("dragover", (e) => this.FileDragHover(e), false);
+    el.addEventListener("dragleave", (e) => this.FileDragHover(e), false);
+    el.addEventListener("drop", (e) => this.FileSelectHandler(e), false);
+
+    return this;
 }
 
-function FileDragHover(e) {
+FileDrag.prototype.FileDragHover = function(e){
     e.stopPropagation();
     e.preventDefault();
     if (e.type == "dragover")
@@ -20,10 +24,11 @@ function FileDragHover(e) {
         e.target.classList.remove("hover");
 }
 
-function FileSelectHandler(e) {
+FileDrag.prototype.FileSelectHandler = function(e){
     e.stopPropagation();
     e.preventDefault();
-    FileDragHover(e);
+
+    this.FileDragHover(e);
 
     var files = e.target.files || e.dataTransfer.files;
 
@@ -32,29 +37,48 @@ function FileSelectHandler(e) {
 
     let file = files[0];
 
-    if (file.type.indexOf("image") == -1) {
-        em.emit("nonimage", file.name);
-        return;
-    }
+    // if (file.type.indexOf("image") == -1) {
+    //     this.em.emit("nonimage", file.name);
+    //     return;
+    // }
 
     var reader = new FileReader();
-    reader.onload = function (e) {
-        em.emit("loaded", file, e.target.result);
-        UploadFile(file);
+    reader.onload = (e) => {
+        this.em.emit("loaded", file, e.target.result);
+        this.UploadFile(file);
     }
     reader.readAsDataURL(file);
 }
 
-function UploadFile(file){
+FileDrag.prototype.UploadFile = function(file){
     // && file.size <= $id("MAX_FILE_SIZE").value
     // if (xhr.upload && file.type == "image/jpeg") {
+    if(this.upload_path == "s3"){
+        S3FileUpload.uploadFile(file, {
+            ...this.s3Config,
+            onProgress: (percent) => {
+                this.em.emit("progressed", percent);
+            }
+        })
+        .then(({location}) => {
+            console.log("File location: ", location);
+            this.em.emit("complete", true, location);
+        })
+        .catch(error => {
+            console.log("Error uploadign file");
+            this.em.emit("complete", false, "A network or server error occured!");
+        });
+
+
+        return;
+    }
 
     const config = {
         headers: { 'content-type': 'multipart/form-data' },
         onUploadProgress: progressEvent => {
-            var per = progressEvent.loaded / progressEvent.total * 100;
+            var per = progressEvent.loaded * 100 / progressEvent.total;
             console.log("Progress: ", per);
-            em.emit("progress", per);
+            this.em.emit("progressed", per);
         }
     }
     var form = new FormData();
@@ -64,12 +88,17 @@ function UploadFile(file){
     form.append('name', name);
     form.append('ext', ext);
 
-    axios.post(upload_path, form, config)
+    console.log("Upload path: ", this);
+
+    axios.post(this.upload_path, form, config)
         .then(result => {
             const res = result.data;
             const payload = res.success ? res.path : res.msg;
-            em.emit("complete", res.success, payload);
-        }).catch(() => {
-            em.emit("complete", false, "A network or server error occured!");
+            this.em.emit("complete", res.success, payload);
+        }).catch((e) => {
+            console.log("Error uploading file: ", e);
+            this.em.emit("complete", false, "A network or server error occured!");
         });
 }
+
+export default FileDrag;

@@ -9,6 +9,7 @@
   },
   "dependencies": {
     "EventEmitter": "^1.0.0",
+    "crypto-js": "^4.1.1",
     "unsplash-js": "^4.8.0",
     "visibilityjs": "^2.0.2",
     "vue": "^2.5.17"

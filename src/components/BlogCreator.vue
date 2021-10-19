@@ -430,6 +430,7 @@
     export default {
         props:{
             blog: Object,
+            s3Config: Object | String,
             saveUrl: String,
             imageUploadUrl: String,
             unsplashClientId: String,
@@ -440,6 +441,13 @@
         //     imageUploadUrl: this.imageUploadUrl,
         //     unsplashClientId: this.unsplashClientId
         // },
+
+        provide(){
+            return {
+                s3Config: this.s3Config,
+                imageUploadUrl: this.imageUploadUrl,
+            }
+        },
 
         data(){
             return {

@@ -31,7 +31,6 @@
 
 		public function get_creator_json(){
 			$json = file_get_contents("blogs/$this->id.json");
-			// return json_decode($json);
 			return $json;
 		}
 	}

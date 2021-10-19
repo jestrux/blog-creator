@@ -20,8 +20,25 @@
       <blog-creator
         youtube-api-key="AIzaSyAq8HPrbemKw4a23McQJD9ksl2w2lGAcII"
         unsplash-client-id="17ef130962858e4304efe9512cf023387ee5d36f0585e4346f0f70b2f9729964"
-        image-upload-url="upload_image.php"
-        save-url="save_blog.php" />
+        image-upload-url="s3"
+        save-url="save_blog.php" 
+        :s3-config="{
+          bucketName: 'pier-files',
+          region: 'us-east-2',
+          accessKeyId: 'AKIAICOBEV7A6EPHGA5Q',
+          secretAccessKey: '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'
+        }"
+      />
+
+      <!-- MIX_S3_BUCKET=pier-files
+      MIX_S3_REGION=us-east-2
+      MIX_S3_ACCESS_KEY_ID=AKIAICOBEV7A6EPHGA5Q"
+      MIX_S3_SECRET_ACCESS_KEY=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 -->
+
+      <!-- bucketName: process.env.MIX_S3_BUCKET,
+      region: process.env.MIX_S3_REGION,
+      accessKeyId: process.env.MIX_S3_ACCESS_KEY_ID,
+      secretAccessKey: process.env.MIX_S3_SECRET_ACCESS_KEY, -->
     </div>
 
     <script>

@@ -2,21 +2,19 @@
     #fileUploader{
       position: relative;
     }
-
     img{
       width: 100%;
       max-height: 300px;
       object-fit: cover;
       object-position: center;
     }
-
     #fileDrop{
       position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 150px;
+      min-height: 120px;
       background-color: #e8e8e8;
       border-bottom: 1px solid #eee;
       padding: 1em;
@@ -24,12 +22,10 @@
       font-size: 0.9em;
       border: 3px dashed transparent;
     }
-
     #fileDrop.hover{
       border-color: #ccc;
       margin: 2px;
     }
-
     #loader {
       position: absolute;
       top: 0;
@@ -48,7 +44,6 @@
       justify-content: center;
       transition: opacity 0.35s ease-out;
     }
-
     #loader span {
       width: 50px;
       height: 50px;
@@ -59,12 +54,10 @@
       margin-bottom: 2em;
       animation: roll 0.7s ease-out infinite alternate;
     }
-
     #loader.hide {
       opacity: 0;
       pointer-events: none
     }
-
     #fileDrop:before{
       content: 'Drop your file here to upload.';
       position: absolute;
@@ -77,7 +70,6 @@
       align-items: center;
       justify-content: center;
     }
-
     #error{
       display: flex;
       flex-direction: column;
@@ -92,13 +84,11 @@
       background: rgba(199, 76, 76, 0.97);
       color: #fff;
     }
-
     #error svg{
       height: 36px;
       width: 36px;
       fill: #672827;
     }
-
     #error p{
       margin-top: 0.4em;
       margin-bottom: 1em;
@@ -140,17 +130,14 @@
 </template>
 
 <script>
-  import {em, Init} from "./filedrag";
-
+  import FileDrag from "./filedrag";
   // TODO: Fix second upload error
-
-  var self;
   
   export default {
     props: {
-      imageUploadUrl: String,
       location: String,
     },
+    inject: ['s3Config', 'imageUploadUrl'],
     data: function() {
       return{
         uploading: false,
@@ -160,35 +147,35 @@
       }
     },
     mounted: function() {
-      self = this;
-      Init(this.$el, this.imageUploadUrl);
-      // console.log(this.imageUploadUrl);
-
-      em.once('loaded', function(file, src) {
-        self.src = src;
-        self.uploading = true;
-      });
-      
-      em.once('progressed', function(progress) {
-        // console.log("Progress changed: ", progress);
-        self.progress = progress;
-      });
-      
-      em.once('complete', function(status, payload) {
-        self.uploading = false;
-        console.log(status, payload);
-        // console.log("Completed successfully: ", status, payload);
-
-        if(status)
-          self.$emit("input", payload);
-        else{
-          self.upload_error = payload;
-          self.src = null;
-        }
-      });
+      this.setup();
     },
     methods: {
-      
+      setup(){
+        console.log("S3 config: ", this.s3Config);
+        const self = this;
+        const { em } = new FileDrag(this.$el, this.imageUploadUrl, this.s3Config);
+        em.on('loaded', function(file, src) {
+          self.src = src;
+          self.uploading = true;
+        });
+        
+        em.on('progressed', function(progress) {
+          // console.log("Progress changed: ", progress);
+          self.progress = progress;
+        });
+        
+        em.on('complete', function(status, payload) {
+          self.uploading = false;
+          console.log(status, payload);
+          // console.log("Completed successfully: ", status, payload);
+          if(status)
+            self.$emit("input", payload);
+          else{
+            self.upload_error = payload;
+            self.src = null;
+          }
+        });
+      }
     }
   }
 </script>
