@@ -19,7 +19,7 @@
     "@vue/cli-plugin-eslint": "^3.0.0-rc.12",
     "@vue/cli-service": "^3.0.0-rc.12",
     "autosize": "^4.0.2",
-    "axios": "^0.18",
+    "axios": "^0.21",
     "bootstrap": "^4.0.0",
     "cross-env": "^5.1",
     "lodash": "^4.17.4",
